@@ -1,0 +1,86 @@
+\documentclass[letterpaper]{article}
+
+\usepackage{natbib, alifeconf}  %% The order is important
+
+\title{Cool title here}
+\author{First author$^{1}$, Second author$^{1}$, Anya Vostinar$^{1}$ \and Emily Dolson$^{2,3,4}$ \\
+\mbox{}\\
+$^1$Department of Computer Science, Carleton College, Northfield, MN, 55057 \\
+$^2$Department of Computer Science and Engineering, Michigan State University, East Lansing, MI, 48824 \\
+$^3$Ecology, Evolution and Behavior, Michigan State University, East Lansing, MI, 48824 \\
+$^4$BEACON Center for the Study of Evolution in Action, Michigan State University, East Lansing, MI, 48824 \\
+dolsonem@msu.edu} % email of corresponding author
+
+% For several authors from the same institution use the same number to
+% refer to one address.
+%
+% If the names do not fit well on one line use
+%         Author 1, Author 2 ... \\ {\Large\bf Author n} ...\\ ...
+%
+% If the title and author information do not fit in the area
+% allocated, place \setlength\titlebox{<new height>} after the
+% \documentclass line where <new height> is 2.25in
+
+
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Abstract goes here
+\end{abstract}
+
+\section{Introduction}
+
+% Outline:
+% - Why we care about this general topic (understanding microbiome is important for health, etc.)
+% - What we know so far (Anya's paper, lit review)
+% - Why it's not obvious what will happen when we add symbiont ecology and why it's important to answer that question
+
+\section{Methods}
+
+% Outline:
+% - Summary of how Symbulation works (reference previous papers so people can read more if they want)
+% - Summary of any changes we made to Symbulation
+% - Describe what experimental conditions we tested and why
+
+\section{Results and Discussion}
+
+% Describe what happened
+% Discuss why that happened and how it connects to other stuff we know
+
+\section{Conclusion}
+
+% What are our big picture findings and why do the matter?
+
+% Here's an example of adding a figure
+% \begin{figure}[t]
+% \begin{center}
+% \includegraphics[width=2.1in,angle=-90]{figures/fig_name_here.png}
+% \caption{Caption here}
+% \label{fig_label_here}
+% \end{center}
+% \end{figure}
+
+% Here's an example of adding an equation
+% \begin{eqnarray}
+% v\sim\sqrt{D\Delta\epsilon}\;, \label{eq4}
+% \end{eqnarray}
+
+
+
+\section{Acknowledgements}
+
+Acknowledgements here.
+
+% People to acknowledge:
+% - Fellowships
+% - BEACON
+% - ICER
+
+\footnotesize
+\bibliographystyle{apalike}
+\bibliography{example} % replace by the name of your .bib file
+
+
+\end{document}
