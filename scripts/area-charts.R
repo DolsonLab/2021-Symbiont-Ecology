@@ -5,15 +5,15 @@ update.packages()
 fullcubeHelix <- c("#673F03", "#7D3002", "#891901", "#A7000F", "#B50142", "#CD0778", "#D506AD", "#E401E7", "#AB08FF","#7B1DFF", "#5731FD","#5E8EFF", "#4755FF" ,"#6FC4FE", "#86E9FE", "#96FFF7", "#B2FCE3", "#BBFFDB", "#D4FFDD", "#EFFDF0")
 shorthelix <- c("#A7000F", "#E401E7","#5E8EFF","#86E9FE","#B2FCE3")
 elevenhelix <- c("#673F03", "#891901", "#B50142", "#D506AD", "#AB08FF", "#5731FD", "#4755FF", "#86E9FE", "#B2FCE3", "#D4FFDD", "#EFFDF0")
-tenhelix <- c("#891901", "#B50142", "#D506AD", "#AB08FF","#5731FD","#4755FF" , "#86E9FE", "#B2FCE3", "#D4FFDD", "#EFFDF0")
-#"#000000"
+tenhelix <- c("#891901", "#B50142", "#D506AD", "#AB08FF","#000000","#4755FF" , "#86E9FE", "#B2FCE3", "#D4FFDD", "#EFFDF0")
+#"#5731FD"
 setwd("C:/Users/shake/OneDrive/Documents/GitHub/SymbulationEmp/stats_scripts")
 
-all_data <- read.table("munged_area_sym.dat", h=T)
+all_data <- read.table("munged_area_mult-sym-10-s.dat", h=T)
 all_data <- subset(all_data,update != "update")
 #all_data <- read.table("munged_buckets_sym.dat", h=T)
 #under10k <- subset(all_data, update <=50000)
-first_try <- subset(all_data, treatment=="0.0")
+#first_try <- subset(all_data, treatment=="0.0")
 first_try <- all_data
 neg1_9 <- cbind(subset(first_try, interval=="-1_-.9"), Interaction_Rate="-1 to -0.8 (Parasitic)")
 neg9_8 <- cbind(subset(first_try, interval=="-.9_-.8"), Interaction_Rate="-1 to -0.8 (Parasitic)")
@@ -44,38 +44,33 @@ vert10 <- cbind(subset(combined, treatment==0.1), Rate = "10%")
 vert20 <- cbind(subset(combined, treatment==0.2), Rate = "20%")
 vert30 <- cbind(subset(combined, treatment==0.3), Rate = "30%")
 vert40 <- cbind(subset(combined, treatment==0.4), Rate = "40%")
-#vert50 <- cbind(subset(combined, treatment==0.5), Rate = "50%")
-#vert60 <- cbind(subset(combined, treatment==0.6), Rate = "60%")
-#vert70 <- cbind(subset(combined, treatment==0.7), Rate = "70%")
-#vert80 <- cbind(subset(combined, treatment==0.8), Rate = "80%")
-#vert90 <- cbind(subset(combined, treatment==0.9), Rate = "90%")
-#vert100 <- cbind(subset(combined, treatment==1), Rate = "100%")
+vert50 <- cbind(subset(combined, treatment==0.5), Rate = "50%")
+vert60 <- cbind(subset(combined, treatment==0.6), Rate = "60%")
+vert70 <- cbind(subset(combined, treatment==0.7), Rate = "70%")
+vert80 <- cbind(subset(combined, treatment==0.8), Rate = "80%")
+vert90 <- cbind(subset(combined, treatment==0.9), Rate = "90%")
+vert100 <- cbind(subset(combined, treatment==1), Rate = "100%")
 
 combined <- rbind(vert0, vert10, vert10, vert30, vert40)
 
 combined <- vert20
 
-#vert08 <- cbind(subset(combined, treatment==0.08), Rate = "8%")
-#vert09 <- cbind(subset(combined, treatment==0.09), Rate = "9%")
-#vert10 <- cbind(subset(combined, treatment==0.1), Rate="10%")
+vert05 <- cbind(subset(combined, treatment==0.05), Rate = "5%")
+vert06 <- cbind(subset(combined, treatment==0.06), Rate = "6%")
+vert08 <- cbind(subset(combined, treatment==0.08), Rate = "8%")
+vert09 <- cbind(subset(combined, treatment==0.09), Rate = "9%")
+vert10 <- cbind(subset(combined, treatment==0.10), Rate="10%")
 
-#combined <- rbind(vert08, vert09, vert10)
+combined <- rbind(vert05,vert06, vert08, vert09, vert10)
 
-#combined <- vert09
+combined <- vert06
 
 ##Reps
 temp <- aggregate(list(count = as.numeric(combined$count)), list(update=as.numeric(combined$update), rep=combined$seed, Interaction_Rate=combined$Interaction_Rate, Rate=combined$Rate), sum)
 
-ggplot(temp, aes(update,count)) + geom_area(aes(fill=Interaction_Rate), position='stack') +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill="none") + guides(fill = guide_legend())+ facet_wrap(~rep)
+ggplot(temp, aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
 
-##Averaged
-temp <- aggregate(list(count = as.numeric(combined$count)), list(update=as,numeric(combined$update), Interaction_Rate=combined$Interaction_Rate, treatment=combined$treatment, Rate=combined$Rate), mean)
-
-ggplot(temp, aes(update, count)) + geom_area(aes(fill=Interaction_Rate), position='stack') +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill="none") + guides(fill = guide_legend()) + facet_wrap(~Rate)
-
-ggplot(temp, aes(update, count)) + geom_area(aes(fill=Interaction_Rate), position='stack') +ylab("Count of Hosts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill="none") + guides(fill = guide_legend()) + facet_wrap(~Rate)
-
-##Hosts
+##For Hosts: needs to be updated
 host_data <- read.table("munged_area_host.dat", h=T)
 first_try <- subset(host_data, update <=10000)
 first_try <- subset(first_try, treatment=="0.1")
