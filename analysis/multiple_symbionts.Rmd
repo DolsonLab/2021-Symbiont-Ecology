@@ -1,9 +1,21 @@
+---
+title: "Symbiont Ecology"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load the data
+
+```{r data_loading}
 library(ggplot2)
 library(RColorBrewer)
 library(readr)
 library(stringr)
-library(dplyr)
 library(forcats)
+library(dplyr)
 
 fullcubeHelix <- c("#673F03", "#7D3002", "#891901", "#A7000F", "#B50142", "#CD0778", "#D506AD", "#E401E7", "#AB08FF","#7B1DFF", "#5731FD","#5E8EFF", "#4755FF" ,"#6FC4FE", "#86E9FE", "#96FFF7", "#B2FCE3", "#BBFFDB", "#D4FFDD", "#EFFDF0")
 shorthelix <- c("#A7000F", "#E401E7","#5E8EFF","#86E9FE","#B2FCE3")
@@ -72,6 +84,20 @@ all_data$Interaction_Rate <- fct_reorder(all_data$Interaction_Rate, all_data$int
 
 # Sum numbers in each bin to get correct totals
 all_data <- all_data %>% group_by(Interaction_Rate, seed, treatment, update) %>% summarise(count = sum(count)) %>% mutate(rep=seed)
+```
 
-# Make plot
+## Histogram plots
+
+Following are the histograms showing the interaction values for hosts and symbionts across conditions
+
+#### 10 symbionts per host
+
+```{r vt_10_symlimit_10_symbiont_phenotypes}
+ggplot(all_data %>% filter(treatment==.1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+
+```{r vt_50_symlimit_10_symbiont_phenotypes}
 ggplot(all_data %>% filter(treatment==.5), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
