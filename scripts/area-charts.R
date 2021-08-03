@@ -1,109 +1,76 @@
+library(ggplot2)
+library(RColorBrewer)
+library(readr)
+library(stringr)
+library(dplyr)
 
-require(ggplot2)
-require(RColorBrewer)
-update.packages()
 fullcubeHelix <- c("#673F03", "#7D3002", "#891901", "#A7000F", "#B50142", "#CD0778", "#D506AD", "#E401E7", "#AB08FF","#7B1DFF", "#5731FD","#5E8EFF", "#4755FF" ,"#6FC4FE", "#86E9FE", "#96FFF7", "#B2FCE3", "#BBFFDB", "#D4FFDD", "#EFFDF0")
 shorthelix <- c("#A7000F", "#E401E7","#5E8EFF","#86E9FE","#B2FCE3")
 elevenhelix <- c("#673F03", "#891901", "#B50142", "#D506AD", "#AB08FF", "#5731FD", "#4755FF", "#86E9FE", "#B2FCE3", "#D4FFDD", "#EFFDF0")
 tenhelix <- c("#891901", "#B50142", "#D506AD", "#AB08FF","#000000","#4755FF" , "#86E9FE", "#B2FCE3", "#D4FFDD", "#EFFDF0")
 #"#5731FD"
-setwd("C:/Users/shake/OneDrive/Documents/GitHub/SymbulationEmp/stats_scripts")
+# setwd("C:/Users/shake/OneDrive/Documents/GitHub/SymbulationEmp/stats_scripts")
 
-all_data <- read.table("munged_area_mult-sym-10-s.dat", h=T)
-all_data <- subset(all_data,update != "update")
-#all_data <- read.table("munged_buckets_sym.dat", h=T)
-#under10k <- subset(all_data, update <=50000)
-#first_try <- subset(all_data, treatment=="0.0")
-first_try <- all_data
-neg1_9 <- cbind(subset(first_try, interval=="-1_-.9"), Interaction_Rate="-1 to -0.8 (Parasitic)")
-neg9_8 <- cbind(subset(first_try, interval=="-.9_-.8"), Interaction_Rate="-1 to -0.8 (Parasitic)")
-neg8_7 <- cbind(subset(first_try, interval=="-.8_-.7"), Interaction_Rate="-0.8 to -0.6 (Parasitic)")
-neg7_6 <- cbind(subset(first_try, interval=="-.7_-.6"), Interaction_Rate="-0.8 to -0.6 (Parasitic)")
-neg6_5 <- cbind(subset(first_try, interval=="-.6_-.5"), Interaction_Rate="-0.6 to -0.4 (Detrimental)")
-neg5_4 <- cbind(subset(first_try, interval=="-.5_-.4"), Interaction_Rate="-0.6 to -0.4 (Detrimental)")
-neg4_3 <- cbind(subset(first_try, interval=="-.4_-.3"), Interaction_Rate="-0.4 to -0.2 (Detrimental)")
-neg3_2 <- cbind(subset(first_try, interval=="-.3_-.2"), Interaction_Rate="-0.4 to -0.2 (Detrimental)")
-neg2_1 <- cbind(subset(first_try, interval=="-.2_-.1"), Interaction_Rate="-0.2 to 0 (Nearly Neutral)")
-neg1_0 <- cbind(subset(first_try, interval=="-.1_0"), Interaction_Rate="-0.2 to 0 (Nearly Neutral)")
-pos0_1 <- cbind(subset(first_try, interval=="0_.1"), Interaction_Rate="0 to 0.2 (Nearly Neutral)")
-pos1_2 <- cbind(subset(first_try, interval==".1_.2"), Interaction_Rate="0 to 0.2 (Nearly Neutral)")
-pos2_3 <- cbind(subset(first_try, interval==".2_.3"), Interaction_Rate="0.2 to 0.4 (Positive)")
-pos3_4 <- cbind(subset(first_try, interval==".3_.4"), Interaction_Rate="0.2 to 0.4 (Positive)")
-pos4_5 <- cbind(subset(first_try, interval==".4_.5"), Interaction_Rate="0.4 to 0.6 (Positive)")
-pos5_6 <- cbind(subset(first_try, interval==".5_.6"), Interaction_Rate="0.4 to 0.6 (Positive)")
-pos6_7 <- cbind(subset(first_try, interval==".6_.7"), Interaction_Rate="0.6 to 0.8 (Mutualistic)")
-pos7_8 <- cbind(subset(first_try, interval==".7_.8"), Interaction_Rate="0.6 to 0.8 (Mutualistic)")
-pos8_9 <- cbind(subset(first_try, interval==".8_.9"), Interaction_Rate="0.8 to 1.0 (Mutualistic)")
-pos9_1 <- cbind(subset(first_try, interval==".9_1"), Interaction_Rate="0.8 to 1.0 (Mutualistic)")
-#pos1 <- cbind(subset(first_try, interval=="1"), Interaction_Rate="0.8 to 1.0 (Mutualistic)")
+all_data <- read_table2("munged_area_mult-sym-10-s.dat") # Load data
+all_data <- all_data %>% filter(update != "update") # remove extra header rows
 
-combined <- rbind(neg1_9, neg9_8, neg8_7, neg7_6, neg6_5, neg5_4, neg4_3, neg3_2, neg2_1, neg1_0, pos0_1, pos1_2, pos2_3, pos3_4, pos4_5, pos5_6, pos6_7, pos7_8, pos8_9, pos9_1)
+all_data$update <- as.numeric(all_data$update) # Treat update as numeric
+all_data$count <- as.numeric(all_data$count) # Treat count as numeric
 
-vert0 <- cbind(subset(combined, treatment==0.0), Rate = "0%")
-vert10 <- cbind(subset(combined, treatment==0.1), Rate = "10%")
-vert20 <- cbind(subset(combined, treatment==0.2), Rate = "20%")
-vert30 <- cbind(subset(combined, treatment==0.3), Rate = "30%")
-vert40 <- cbind(subset(combined, treatment==0.4), Rate = "40%")
-vert50 <- cbind(subset(combined, treatment==0.5), Rate = "50%")
-vert60 <- cbind(subset(combined, treatment==0.6), Rate = "60%")
-vert70 <- cbind(subset(combined, treatment==0.7), Rate = "70%")
-vert80 <- cbind(subset(combined, treatment==0.8), Rate = "80%")
-vert90 <- cbind(subset(combined, treatment==0.9), Rate = "90%")
-vert100 <- cbind(subset(combined, treatment==1), Rate = "100%")
+all_data <- all_data %>% mutate(  # Create column for heat map label
+                          Interaction_Rate = case_when(
+                            interval == "-1_-.9" ~ "-1 to -0.8 (Parasitic)", 
+                            interval == "-.9_-.8" ~ "-1 to -0.8 (Parasitic)",
+                            interval == "-.8_-.7" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.7_-.6" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.6_-.5" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.5_-.4" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.4_-.3" ~ "-0.4 to -0.2 (Detrimental)",
+                            interval == "-.3_-.2" ~ "-0.4 to -0.2 (Detrimental)", 
+                            interval == "-.2_-.1" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "-.1_0" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "0_.1" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".1_.2" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".2_.3" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".3_.4" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".4_.5" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".5_.6" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".6_.7" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".7_.8" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".8_.9" ~ "0.8 to 1.0 (Mutualistic)",
+                            interval == ".9_1" ~ "0.8 to 1.0 (Mutualistic)"
+                          ),
+                          
+                          Rate = case_when( # Create column for vertical transmission rate label
+                            treatment == 0.0 ~ "0%",
+                            treatment == 0.05 ~ "5%",
+                            treatment == 0.06 ~ "6%",
+                            treatment == 0.07 ~ "7%",
+                            treatment == 0.08 ~ "8%",
+                            treatment == 0.09 ~ "9%",
+                            treatment == 0.1 ~ "10%",
+                            treatment == 0.2 ~ "20%",
+                            treatment == 0.3 ~ "30%",
+                            treatment == 0.4 ~ "40%",
+                            treatment == 0.5 ~ "50%",
+                            treatment == 0.6 ~ "60%",
+                            treatment == 0.7 ~ "70%",
+                            treatment == 0.8 ~ "80%",
+                            treatment == 0.9 ~ "90%",
+                            treatment == 1 ~ "100%",
+                          )
+)
 
-combined <- rbind(vert0, vert10, vert10, vert30, vert40)
+# Reorder interaction rate factor to be in correct numeric order:
+# - First, we turn interval into a numeric variable that just holds the first number of each bin
+all_data$interval <- as.numeric(str_extract(all_data$interval, "^-*\\.*[:digit:]+"))
+# - Next we convert Interaction_Rate to a factor
+all_data$Interaction_Rate <- as.factor(all_data$Interaction_Rate)
+# - Lastly, we reorder Interaction_Rate based on interval
+all_data$Interaction_Rate <- fct_reorder(all_data$Interaction_Rate, all_data$interval)
 
-combined <- vert20
+# Sum numbers in each bin to get correct totals
+all_data <- all_data %>% group_by(Interaction_Rate, seed, treatment, update) %>% summarise(count = sum(count)) %>% mutate(rep=seed)
 
-vert05 <- cbind(subset(combined, treatment==0.05), Rate = "5%")
-vert06 <- cbind(subset(combined, treatment==0.06), Rate = "6%")
-vert08 <- cbind(subset(combined, treatment==0.08), Rate = "8%")
-vert09 <- cbind(subset(combined, treatment==0.09), Rate = "9%")
-vert10 <- cbind(subset(combined, treatment==0.10), Rate="10%")
-
-combined <- rbind(vert05,vert06, vert08, vert09, vert10)
-
-combined <- vert06
-
-##Reps
-temp <- aggregate(list(count = as.numeric(combined$count)), list(update=as.numeric(combined$update), rep=combined$seed, Interaction_Rate=combined$Interaction_Rate, Rate=combined$Rate), sum)
-
-ggplot(temp, aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
-
-##For Hosts: needs to be updated
-host_data <- read.table("munged_area_host.dat", h=T)
-first_try <- subset(host_data, update <=10000)
-first_try <- subset(first_try, treatment=="0.1")
-first_try <- host_data
-all_data <- read.table("munged_area_host.dat", h=T)
-first_try <- subset(all_data, treatment=="mut0.001_mult5_vert0.09_start0.")
-first_try <- subset(all_data, update <= 50000)
-neg1_9 <- cbind(subset(first_try, interval=="-1_-.9"), Interaction_Rate="-1 to -0.8 (Defensive)")
-neg9_8 <- cbind(subset(first_try, interval=="-.9_-.8"), Interaction_Rate="-1 to -0.8 (Defensive)")
-neg8_7 <- cbind(subset(first_try, interval=="-.8_-.7"), Interaction_Rate="-0.8 to -0.6 (Defensive)")
-neg7_6 <- cbind(subset(first_try, interval=="-.7_-.6"), Interaction_Rate="-0.8 to -0.6 (Defensive)")
-neg6_5 <- cbind(subset(first_try, interval=="-.6_-.5"), Interaction_Rate="-0.6 to -0.4 (Mildly Defensive)")
-neg5_4 <- cbind(subset(first_try, interval=="-.5_-.4"), Interaction_Rate="-0.6 to -0.4 (Mildly Defensive)")
-neg4_3 <- cbind(subset(first_try, interval=="-.4_-.3"), Interaction_Rate="-0.4 to -0.2 (Mildly Defensive)")
-neg3_2 <- cbind(subset(first_try, interval=="-.3_-.2"), Interaction_Rate="-0.4 to -0.2 (Mildly Defensive)")
-neg2_1 <- cbind(subset(first_try, interval=="-.2_-.1"), Interaction_Rate="-0.2 to 0 (Nearly Neutral)")
-neg1_0 <- cbind(subset(first_try, interval=="-.1_0"), Interaction_Rate="-0.2 to 0 (Nearly Neutral)")
-pos0_1 <- cbind(subset(first_try, interval=="0_.1"), Interaction_Rate="0 to 0.2 (Nearly Neutral)")
-pos1_2 <- cbind(subset(first_try, interval==".1_.2"), Interaction_Rate="0 to 0.2 (Nearly Neutral)")
-pos2_3 <- cbind(subset(first_try, interval==".2_.3"), Interaction_Rate="0.2 to 0.4 (Positive)")
-pos3_4 <- cbind(subset(first_try, interval==".3_.4"), Interaction_Rate="0.2 to 0.4 (Positive)")
-pos4_5 <- cbind(subset(first_try, interval==".4_.5"), Interaction_Rate="0.4 to 0.6 (Positive)")
-pos5_6 <- cbind(subset(first_try, interval==".5_.6"), Interaction_Rate="0.4 to 0.6 (Positive)")
-pos6_7 <- cbind(subset(first_try, interval==".6_.7"), Interaction_Rate="0.6 to 0.8 (Mutualistic)")
-pos7_8 <- cbind(subset(first_try, interval==".7_.8"), Interaction_Rate="0.6 to 0.8 (Mutualistic)")
-pos8_9 <- cbind(subset(first_try, interval==".8_.9"), Interaction_Rate="0.6 to 1.0 (Mutualistic)")
-pos9_1 <- cbind(subset(first_try, interval==".9_1"), Interaction_Rate="0.6 to 1.0 (Mutualistic)")
-#pos1 <- cbind(subset(first_try, interval=="1"), Interaction_Rate="0.6 to 1.0 (Mutualistic)")
-
-
-combined <- rbind(neg1_9, neg9_8, neg8_7, neg7_6, neg6_5, neg5_4, neg4_3, neg3_2, neg2_1, neg1_0, pos0_1, pos1_2, pos2_3, pos3_4, pos4_5, pos5_6, pos6_7, pos7_8, pos8_9, pos9_1, pos1)
-
-temp <- aggregate(list(count = combined$count), list(update=combined$update, rep=combined$rep, Interaction_Rate=combined$Interaction_Rate, treatment=combined$treatment), sum)
-
-ggplot(temp, aes(update, count)) + geom_area(aes(fill=Interaction_Rate), position='stack') +ylab("Count of Hosts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_brewer("Interaction Rate\n Phenotypes", palette="Paired") + guides(fill = guide_legend(reverse=TRUE)) + facet_wrap(~treatment) +facet_wrap(~rep)
-
+# Make plot
+ggplot(all_data %>% filter(treatment==.5), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
