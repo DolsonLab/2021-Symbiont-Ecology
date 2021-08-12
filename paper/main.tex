@@ -34,8 +34,12 @@ Abstract goes here
 
 % Outline:
 % - Why we care about this general topic (understanding microbiome is important for health, etc.)
+
 % - What we know so far (Anya's paper, lit review)
 % - Why it's not obvious what will happen when we add symbiont ecology and why it's important to answer that question
+The human gut microbiome is a complex network of bacteria, phage, and other microorganisms, all interacting with each other in different ways. Many of these interactions occur between a host organism (such as a bacterium) and an endosymbiont (such as a phage) that lives inside it. These host-endosymbiont interactions range from mutualistic to parasitic. In a mutualistic interaction, the host and endosymbiont cooperate with each other and both benefit. In contrast, in a parasitic interaction the endosymbiont steals resources from the host and the host expends resources attempting to defend itself, so both suffer. The human gastrointestinal tract houses a number of bacteria and other microorganisms that comprise the human gut microbiome. The interactions between these organisms are important for increasing overall immunity, enhancing digestion, and promoting the functions of human metabolism and physiology. Over the course of many generations, the behavior of hosts and endosymbionts can evolve. Because these organisms have dramatically shorter generation times than humans, this evolution occurs on a time scale that is relevant for predicting the state of an individual person's gut microbiome over time. A factor that is known to be important in determining the course of this co-evolution is vertical transmission rate: the probability of the endosymbiont's offspring ending up in the host's offspring as a result of the host's reproduction process.  Prior research has shown that in a simplified digital model system where only one endosymbiont can inhabit a host at once, higher vertical transmission rates better promote evolutionarily stable mutualistic relationships \citep{vostinar_SpatialStructureCan_2019}. However, it is unclear whether this relationship will persist when multiple endosymbionts are allowed to inhabit the same host. One-to-one interactions between hosts and endosymbionts are unlikely to exist in nature, making this question important to predicting evolutionary trajectories of ecological communities such as the gut microbiome. 
+
+(Insert lit Review)
 
 \section{Methods}
 
@@ -43,10 +47,20 @@ Abstract goes here
 % - Summary of how Symbulation works (reference previous papers so people can read more if they want)
 % - Summary of any changes we made to Symbulation
 % - Describe what experimental conditions we tested and why
+We used Symbulation, an agent based model of co-evolution between host organisms and symbionts, as a simple environment in which to observe the evolution of interactions between these organisms \citep{vostinar_SpatialStructureCan_2019}\\
+In Symbulation, the behavior of each individual is characterized by an ``interaction value'' between -1 (antagonistic) and 1 (mutualistic).  This value determines the relationship between each organism and its partners, if it has any. At every time step, the host receives (some number) of resources. Some of these resources may be passed on to its symbiont(s), based on the host's interaction value. Similarly, if the symbiont receives resources from the host, its interaction value determines whether it returns any resources back to its host. A highly antagonistic host will invest its resources into its own defense and not cooperate with the symbiont, while a highly cooperative host will donate some of its resources to its symbiont partner(s) if it so chooses. Similarly a highly antagonistic symbiont will steal resources from its host while a highly mutualistic symbiont will donate some of its resources back to the host.(Insert table in Anya's paper)\\
+\\
+(Insert Anya's paper) showed that there is a clean relationship between vertical transmission rate(explain vertical transmission rate) and the interaction value between a host and symbiont when there was i=only one symbiont to account for. To test how the presence of multiple symbionts changes the relationship between vertical transmission rate and the evolutionary stability of mutualism, we made use of the sym-limit function in Symbulation. the sym-limit is the number of symbionts that are allowed inside a single host. We tested vertical transmission rates 0,10,20,30,40,50,60,70,80,90,100 at sym-limits 1,10,20,40,50,60,100 and 1000 to see what effect vertical transmission rate and number of symbionts have on the Host-symbiont interaction values.
+(Insert Zhen's updates)
 
 \section{Results and Discussion}
 
 % Describe what happened
+% - Figure showing replication of Anya's boxplot results - say it agrees with what she found
+% - Figure showing boxplots for high sym-limits (maybe 10, 50, 100?)
+% - Point out that the level of vertical transmission required to stabilize mutualism gets higher
+% [ results from follow-up experiments here]
+
 % Discuss why that happened and how it connects to other stuff we know
 
 \section{Conclusion}
@@ -80,7 +94,7 @@ Acknowledgements here.
 
 \footnotesize
 \bibliographystyle{apalike}
-\bibliography{example} % replace by the name of your .bib file
+\bibliography{bibliography} % replace by the name of your .bib file
 
 
 \end{document}
