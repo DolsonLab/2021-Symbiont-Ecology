@@ -1,0 +1,1159 @@
+---
+title: "Symbiont Diversity Ecology Data"
+author: "Shakeal Hodge"
+date: "8/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r }
+library(ggplot2)
+library(RColorBrewer)
+library(readr)
+library(stringr)
+library(forcats)
+library(dplyr)
+```
+ 
+#Load the Data
+
+Can be used to load files created from SymVals/HostVals data
+
+
+```{r}
+fullcubeHelix <- c("#673F03", "#7D3002", "#891901", "#A7000F", "#B50142", "#CD0778", "#D506AD", "#E401E7", "#AB08FF","#7B1DFF", "#5731FD","#5E8EFF", "#4755FF" ,"#6FC4FE", "#86E9FE", "#96FFF7", "#B2FCE3", "#BBFFDB", "#D4FFDD", "#EFFDF0")
+shorthelix <- c("#A7000F", "#E401E7","#5E8EFF","#86E9FE","#B2FCE3")
+elevenhelix <- c("#673F03", "#891901", "#B50142", "#D506AD", "#AB08FF", "#5731FD", "#4755FF", "#86E9FE", "#B2FCE3", "#D4FFDD", "#EFFDF0")
+tenhelix <- c("#891901", "#B50142", "#D506AD", "#AB08FF","#000000","#4755FF" , "#86E9FE", "#B2FCE3", "#D4FFDD", "#EFFDF0")
+```
+
+```{r}
+
+setwd("C:/Users/shake/OneDrive/Documents/GitHub/SymbulationEmp/stats_scripts")
+##  Plots
+all_data <- read_table2("munged_area_mult-sym-10-s.dat") # Load data
+all_data <- all_data %>% filter(update != "update") # remove extra header rows
+
+all_data$update <- as.numeric(all_data$update) # Treat update as numeric
+all_data$count <- as.numeric(all_data$count) # Treat count as numeric
+
+all_data <- all_data %>% mutate(  # Create column for heat map label
+                          Interaction_Rate = case_when(
+                            interval == "-1_-.9" ~ "-1 to -0.8 (Parasitic)", 
+                            interval == "-.9_-.8" ~ "-1 to -0.8 (Parasitic)",
+                            interval == "-.8_-.7" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.7_-.6" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.6_-.5" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.5_-.4" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.4_-.3" ~ "-0.4 to -0.2 (Detrimental)",
+                            interval == "-.3_-.2" ~ "-0.4 to -0.2 (Detrimental)", 
+                            interval == "-.2_-.1" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "-.1_0" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "0_.1" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".1_.2" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".2_.3" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".3_.4" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".4_.5" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".5_.6" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".6_.7" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".7_.8" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".8_.9" ~ "0.8 to 1.0 (Mutualistic)",
+                            interval == ".9_1" ~ "0.8 to 1.0 (Mutualistic)"
+                          ),
+                          
+                          Rate = case_when( # Create column for vertical transmission rate label
+                            treatment == 0.0 ~ "0%",
+                            treatment == 0.05 ~ "5%",
+                            treatment == 0.06 ~ "6%",
+                            treatment == 0.07 ~ "7%",
+                            treatment == 0.08 ~ "8%",
+                            treatment == 0.09 ~ "9%",
+                            treatment == 0.1 ~ "10%",
+                            treatment == 0.2 ~ "20%",
+                            treatment == 0.3 ~ "30%",
+                            treatment == 0.4 ~ "40%",
+                            treatment == 0.5 ~ "50%",
+                            treatment == 0.6 ~ "60%",
+                            treatment == 0.7 ~ "70%",
+                            treatment == 0.8 ~ "80%",
+                            treatment == 0.9 ~ "90%",
+                            treatment == 1 ~ "100%",
+                          )
+)
+
+# Reorder interaction rate factor to be in correct numeric order:
+# - First, we turn interval into a numeric variable that just holds the first number of each bin
+all_data$interval <- as.numeric(str_extract(all_data$interval, "^-*\\.*[:digit:]+"))
+# - Next we convert Interaction_Rate to a factor
+all_data$Interaction_Rate <- as.factor(all_data$Interaction_Rate)
+# - Lastly, we reorder Interaction_Rate based on interval
+all_data$Interaction_Rate <- fct_reorder(all_data$Interaction_Rate, all_data$interval)
+
+# Sum numbers in each bin to get correct totals
+all_data <- all_data %>% group_by(Interaction_Rate, seed, treatment, update) %>% summarise(count = sum(count)) %>% mutate(rep=seed)
+```
+
+#Create SymVals Data plots
+
+```{r s-10-v-0}
+# Make plot
+ggplot(all_data %>% filter(treatment==0), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-10-v-10}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-10-v-20}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.2), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-10-v-30}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.3), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-10-v-40}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.4), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-10-v-50}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.5), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-10-v-60}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.6), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-10-v-70}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.7), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-10-v-80}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.8), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-10-v-90}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.9), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-10-v-100}
+# Make plot
+ggplot(all_data %>% filter(treatment==1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+
+#20 Symbionts per Host
+
+##Load the Data
+
+```{r}
+
+setwd("C:/Users/shake/OneDrive/Documents/GitHub/SymbulationEmp/stats_scripts")
+##  Plots
+all_data <- read_table2("munged_area_mult-sym-20-s.dat") # Load data
+all_data <- all_data %>% filter(update != "update") # remove extra header rows
+
+all_data$update <- as.numeric(all_data$update) # Treat update as numeric
+all_data$count <- as.numeric(all_data$count) # Treat count as numeric
+
+all_data <- all_data %>% mutate(  # Create column for heat map label
+                          Interaction_Rate = case_when(
+                            interval == "-1_-.9" ~ "-1 to -0.8 (Parasitic)", 
+                            interval == "-.9_-.8" ~ "-1 to -0.8 (Parasitic)",
+                            interval == "-.8_-.7" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.7_-.6" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.6_-.5" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.5_-.4" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.4_-.3" ~ "-0.4 to -0.2 (Detrimental)",
+                            interval == "-.3_-.2" ~ "-0.4 to -0.2 (Detrimental)", 
+                            interval == "-.2_-.1" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "-.1_0" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "0_.1" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".1_.2" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".2_.3" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".3_.4" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".4_.5" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".5_.6" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".6_.7" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".7_.8" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".8_.9" ~ "0.8 to 1.0 (Mutualistic)",
+                            interval == ".9_1" ~ "0.8 to 1.0 (Mutualistic)"
+                          ),
+                          
+                          Rate = case_when( # Create column for vertical transmission rate label
+                            treatment == 0.0 ~ "0%",
+                            treatment == 0.05 ~ "5%",
+                            treatment == 0.06 ~ "6%",
+                            treatment == 0.07 ~ "7%",
+                            treatment == 0.08 ~ "8%",
+                            treatment == 0.09 ~ "9%",
+                            treatment == 0.1 ~ "10%",
+                            treatment == 0.2 ~ "20%",
+                            treatment == 0.3 ~ "30%",
+                            treatment == 0.4 ~ "40%",
+                            treatment == 0.5 ~ "50%",
+                            treatment == 0.6 ~ "60%",
+                            treatment == 0.7 ~ "70%",
+                            treatment == 0.8 ~ "80%",
+                            treatment == 0.9 ~ "90%",
+                            treatment == 1 ~ "100%",
+                          )
+)
+
+# Reorder interaction rate factor to be in correct numeric order:
+# - First, we turn interval into a numeric variable that just holds the first number of each bin
+all_data$interval <- as.numeric(str_extract(all_data$interval, "^-*\\.*[:digit:]+"))
+# - Next we convert Interaction_Rate to a factor
+all_data$Interaction_Rate <- as.factor(all_data$Interaction_Rate)
+# - Lastly, we reorder Interaction_Rate based on interval
+all_data$Interaction_Rate <- fct_reorder(all_data$Interaction_Rate, all_data$interval)
+
+# Sum numbers in each bin to get correct totals
+all_data <- all_data %>% group_by(Interaction_Rate, seed, treatment, update) %>% summarise(count = sum(count)) %>% mutate(rep=seed)
+```
+
+##Create SymVals Data plots 
+
+```{r s-20-v-0}
+# Make plot
+ggplot(all_data %>% filter(treatment==0), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-20-v-10}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-20-v-20}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.2), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-20-v-30}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.3), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-20-v-40}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.4), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-20-v-50}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.5), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-20-v-60}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.6), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-20-v-70}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.7), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-20-v-80}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.8), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-20-v-90}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.9), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-20-v-100}
+# Make plot
+ggplot(all_data %>% filter(treatment==1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+#40 Symbionts per Host
+
+#Load the Data
+
+```{r}
+
+setwd("C:/Users/shake/OneDrive/Documents/GitHub/SymbulationEmp/stats_scripts")
+##  Plots
+all_data <- read_table2("munged_area_mult-sym-40-s.dat") # Load data
+all_data <- all_data %>% filter(update != "update") # remove extra header rows
+
+all_data$update <- as.numeric(all_data$update) # Treat update as numeric
+all_data$count <- as.numeric(all_data$count) # Treat count as numeric
+
+all_data <- all_data %>% mutate(  # Create column for heat map label
+                          Interaction_Rate = case_when(
+                            interval == "-1_-.9" ~ "-1 to -0.8 (Parasitic)", 
+                            interval == "-.9_-.8" ~ "-1 to -0.8 (Parasitic)",
+                            interval == "-.8_-.7" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.7_-.6" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.6_-.5" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.5_-.4" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.4_-.3" ~ "-0.4 to -0.2 (Detrimental)",
+                            interval == "-.3_-.2" ~ "-0.4 to -0.2 (Detrimental)", 
+                            interval == "-.2_-.1" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "-.1_0" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "0_.1" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".1_.2" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".2_.3" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".3_.4" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".4_.5" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".5_.6" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".6_.7" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".7_.8" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".8_.9" ~ "0.8 to 1.0 (Mutualistic)",
+                            interval == ".9_1" ~ "0.8 to 1.0 (Mutualistic)"
+                          ),
+                          
+                          Rate = case_when( # Create column for vertical transmission rate label
+                            treatment == 0.0 ~ "0%",
+                            treatment == 0.05 ~ "5%",
+                            treatment == 0.06 ~ "6%",
+                            treatment == 0.07 ~ "7%",
+                            treatment == 0.08 ~ "8%",
+                            treatment == 0.09 ~ "9%",
+                            treatment == 0.1 ~ "10%",
+                            treatment == 0.2 ~ "20%",
+                            treatment == 0.3 ~ "30%",
+                            treatment == 0.4 ~ "40%",
+                            treatment == 0.5 ~ "50%",
+                            treatment == 0.6 ~ "60%",
+                            treatment == 0.7 ~ "70%",
+                            treatment == 0.8 ~ "80%",
+                            treatment == 0.9 ~ "90%",
+                            treatment == 1 ~ "100%",
+                          )
+)
+
+# Reorder interaction rate factor to be in correct numeric order:
+# - First, we turn interval into a numeric variable that just holds the first number of each bin
+all_data$interval <- as.numeric(str_extract(all_data$interval, "^-*\\.*[:digit:]+"))
+# - Next we convert Interaction_Rate to a factor
+all_data$Interaction_Rate <- as.factor(all_data$Interaction_Rate)
+# - Lastly, we reorder Interaction_Rate based on interval
+all_data$Interaction_Rate <- fct_reorder(all_data$Interaction_Rate, all_data$interval)
+
+# Sum numbers in each bin to get correct totals
+all_data <- all_data %>% group_by(Interaction_Rate, seed, treatment, update) %>% summarise(count = sum(count)) %>% mutate(rep=seed)
+```
+
+#Create SymVals Data plots
+
+```{r s-40-v-0}
+# Make plot
+ggplot(all_data %>% filter(treatment==0), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-40-v-10}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-40-v-20}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.2), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-40-v-30}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.3), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-40-v-40}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.4), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-40-v-50}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.5), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-40-v-60}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.6), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-40-v-70}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.7), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-40-v-80}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.8), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-40-v-90}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.9), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-40-v-100}
+# Make plot
+ggplot(all_data %>% filter(treatment==1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+#50 Symbionts per Host
+
+## Load the Data 
+
+```{r}
+
+setwd("C:/Users/shake/OneDrive/Documents/GitHub/SymbulationEmp/stats_scripts")
+##  Plots
+all_data <- read_table2("munged_area_mult-sym-50-s.dat") # Load data
+all_data <- all_data %>% filter(update != "update") # remove extra header rows
+
+all_data$update <- as.numeric(all_data$update) # Treat update as numeric
+all_data$count <- as.numeric(all_data$count) # Treat count as numeric
+
+all_data <- all_data %>% mutate(  # Create column for heat map label
+                          Interaction_Rate = case_when(
+                            interval == "-1_-.9" ~ "-1 to -0.8 (Parasitic)", 
+                            interval == "-.9_-.8" ~ "-1 to -0.8 (Parasitic)",
+                            interval == "-.8_-.7" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.7_-.6" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.6_-.5" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.5_-.4" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.4_-.3" ~ "-0.4 to -0.2 (Detrimental)",
+                            interval == "-.3_-.2" ~ "-0.4 to -0.2 (Detrimental)", 
+                            interval == "-.2_-.1" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "-.1_0" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "0_.1" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".1_.2" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".2_.3" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".3_.4" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".4_.5" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".5_.6" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".6_.7" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".7_.8" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".8_.9" ~ "0.8 to 1.0 (Mutualistic)",
+                            interval == ".9_1" ~ "0.8 to 1.0 (Mutualistic)"
+                          ),
+                          
+                          Rate = case_when( # Create column for vertical transmission rate label
+                            treatment == 0.0 ~ "0%",
+                            treatment == 0.05 ~ "5%",
+                            treatment == 0.06 ~ "6%",
+                            treatment == 0.07 ~ "7%",
+                            treatment == 0.08 ~ "8%",
+                            treatment == 0.09 ~ "9%",
+                            treatment == 0.1 ~ "10%",
+                            treatment == 0.2 ~ "20%",
+                            treatment == 0.3 ~ "30%",
+                            treatment == 0.4 ~ "40%",
+                            treatment == 0.5 ~ "50%",
+                            treatment == 0.6 ~ "60%",
+                            treatment == 0.7 ~ "70%",
+                            treatment == 0.8 ~ "80%",
+                            treatment == 0.9 ~ "90%",
+                            treatment == 1 ~ "100%",
+                          )
+)
+
+# Reorder interaction rate factor to be in correct numeric order:
+# - First, we turn interval into a numeric variable that just holds the first number of each bin
+all_data$interval <- as.numeric(str_extract(all_data$interval, "^-*\\.*[:digit:]+"))
+# - Next we convert Interaction_Rate to a factor
+all_data$Interaction_Rate <- as.factor(all_data$Interaction_Rate)
+# - Lastly, we reorder Interaction_Rate based on interval
+all_data$Interaction_Rate <- fct_reorder(all_data$Interaction_Rate, all_data$interval)
+
+# Sum numbers in each bin to get correct totals
+all_data <- all_data %>% group_by(Interaction_Rate, seed, treatment, update) %>% summarise(count = sum(count)) %>% mutate(rep=seed)
+```
+
+#Create SymVals Data plots
+
+```{r s-50-v-0}
+# Make plot
+ggplot(all_data %>% filter(treatment==0), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-50-v-10}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-50-v-20}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.2), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-50-v-30}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.3), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-50-v-40}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.4), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-50-v-50}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.5), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-50-v-60}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.6), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-50-v-70}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.7), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-50-v-80}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.8), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-50-v-90}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.9), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-50-v-100}
+# Make plot
+ggplot(all_data %>% filter(treatment==1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+#60 Symbionts per Host
+
+##Load the Data
+
+```{r}
+
+setwd("C:/Users/shake/OneDrive/Documents/GitHub/SymbulationEmp/stats_scripts")
+##  Plots
+all_data <- read_table2("munged_area_mult-sym-60-s.dat") # Load data
+all_data <- all_data %>% filter(update != "update") # remove extra header rows
+
+all_data$update <- as.numeric(all_data$update) # Treat update as numeric
+all_data$count <- as.numeric(all_data$count) # Treat count as numeric
+
+all_data <- all_data %>% mutate(  # Create column for heat map label
+                          Interaction_Rate = case_when(
+                            interval == "-1_-.9" ~ "-1 to -0.8 (Parasitic)", 
+                            interval == "-.9_-.8" ~ "-1 to -0.8 (Parasitic)",
+                            interval == "-.8_-.7" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.7_-.6" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.6_-.5" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.5_-.4" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.4_-.3" ~ "-0.4 to -0.2 (Detrimental)",
+                            interval == "-.3_-.2" ~ "-0.4 to -0.2 (Detrimental)", 
+                            interval == "-.2_-.1" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "-.1_0" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "0_.1" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".1_.2" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".2_.3" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".3_.4" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".4_.5" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".5_.6" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".6_.7" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".7_.8" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".8_.9" ~ "0.8 to 1.0 (Mutualistic)",
+                            interval == ".9_1" ~ "0.8 to 1.0 (Mutualistic)"
+                          ),
+                          
+                          Rate = case_when( # Create column for vertical transmission rate label
+                            treatment == 0.0 ~ "0%",
+                            treatment == 0.05 ~ "5%",
+                            treatment == 0.06 ~ "6%",
+                            treatment == 0.07 ~ "7%",
+                            treatment == 0.08 ~ "8%",
+                            treatment == 0.09 ~ "9%",
+                            treatment == 0.1 ~ "10%",
+                            treatment == 0.2 ~ "20%",
+                            treatment == 0.3 ~ "30%",
+                            treatment == 0.4 ~ "40%",
+                            treatment == 0.5 ~ "50%",
+                            treatment == 0.6 ~ "60%",
+                            treatment == 0.7 ~ "70%",
+                            treatment == 0.8 ~ "80%",
+                            treatment == 0.9 ~ "90%",
+                            treatment == 1 ~ "100%",
+                          )
+)
+
+# Reorder interaction rate factor to be in correct numeric order:
+# - First, we turn interval into a numeric variable that just holds the first number of each bin
+all_data$interval <- as.numeric(str_extract(all_data$interval, "^-*\\.*[:digit:]+"))
+# - Next we convert Interaction_Rate to a factor
+all_data$Interaction_Rate <- as.factor(all_data$Interaction_Rate)
+# - Lastly, we reorder Interaction_Rate based on interval
+all_data$Interaction_Rate <- fct_reorder(all_data$Interaction_Rate, all_data$interval)
+
+# Sum numbers in each bin to get correct totals
+all_data <- all_data %>% group_by(Interaction_Rate, seed, treatment, update) %>% summarise(count = sum(count)) %>% mutate(rep=seed)
+```
+
+#Create SymVals Data plots
+
+```{r s-60-v-0}
+# Make plot
+ggplot(all_data %>% filter(treatment==0), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-60-v-10}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-60-v-20}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.2), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-60-v-30}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.3), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-60-v-40}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.4), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-60-v-50}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.5), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-60-v-60}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.6), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-60-v-70}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.7), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-60-v-80}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.8), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-60-v-90}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.9), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-60-v-100}
+# Make plot
+ggplot(all_data %>% filter(treatment==1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+#!00 Symbionts per Host
+```{r}
+
+setwd("C:/Users/shake/OneDrive/Documents/GitHub/SymbulationEmp/stats_scripts")
+##  Plots
+all_data <- read_table2("munged_area_mult-sym-100-s.dat") # Load data
+all_data <- all_data %>% filter(update != "update") # remove extra header rows
+
+all_data$update <- as.numeric(all_data$update) # Treat update as numeric
+all_data$count <- as.numeric(all_data$count) # Treat count as numeric
+
+all_data <- all_data %>% mutate(  # Create column for heat map label
+                          Interaction_Rate = case_when(
+                            interval == "-1_-.9" ~ "-1 to -0.8 (Parasitic)", 
+                            interval == "-.9_-.8" ~ "-1 to -0.8 (Parasitic)",
+                            interval == "-.8_-.7" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.7_-.6" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.6_-.5" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.5_-.4" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.4_-.3" ~ "-0.4 to -0.2 (Detrimental)",
+                            interval == "-.3_-.2" ~ "-0.4 to -0.2 (Detrimental)", 
+                            interval == "-.2_-.1" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "-.1_0" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "0_.1" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".1_.2" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".2_.3" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".3_.4" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".4_.5" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".5_.6" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".6_.7" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".7_.8" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".8_.9" ~ "0.8 to 1.0 (Mutualistic)",
+                            interval == ".9_1" ~ "0.8 to 1.0 (Mutualistic)"
+                          ),
+                          
+                          Rate = case_when( # Create column for vertical transmission rate label
+                            treatment == 0.0 ~ "0%",
+                            treatment == 0.05 ~ "5%",
+                            treatment == 0.06 ~ "6%",
+                            treatment == 0.07 ~ "7%",
+                            treatment == 0.08 ~ "8%",
+                            treatment == 0.09 ~ "9%",
+                            treatment == 0.1 ~ "10%",
+                            treatment == 0.2 ~ "20%",
+                            treatment == 0.3 ~ "30%",
+                            treatment == 0.4 ~ "40%",
+                            treatment == 0.5 ~ "50%",
+                            treatment == 0.6 ~ "60%",
+                            treatment == 0.7 ~ "70%",
+                            treatment == 0.8 ~ "80%",
+                            treatment == 0.9 ~ "90%",
+                            treatment == 1 ~ "100%",
+                          )
+)
+
+# Reorder interaction rate factor to be in correct numeric order:
+# - First, we turn interval into a numeric variable that just holds the first number of each bin
+all_data$interval <- as.numeric(str_extract(all_data$interval, "^-*\\.*[:digit:]+"))
+# - Next we convert Interaction_Rate to a factor
+all_data$Interaction_Rate <- as.factor(all_data$Interaction_Rate)
+# - Lastly, we reorder Interaction_Rate based on interval
+all_data$Interaction_Rate <- fct_reorder(all_data$Interaction_Rate, all_data$interval)
+
+# Sum numbers in each bin to get correct totals
+all_data <- all_data %>% group_by(Interaction_Rate, seed, treatment, update) %>% summarise(count = sum(count)) %>% mutate(rep=seed)
+```
+
+#Create SymVals Data plots 
+
+```{r s-100-v-0}
+# Make plot
+ggplot(all_data %>% filter(treatment==0), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-100-v-10}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-100-v-20}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.2), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-100-v-30}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.3), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-100-v-40}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.4), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-100-v-50}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.5), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-100-v-60}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.6), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-100-v-70}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.7), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-100-v-80}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.8), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-100-v-90}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.9), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-100-v-100}
+# Make plot
+ggplot(all_data %>% filter(treatment==1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+
+#1000 Symbionts per Host
+
+##Load the Data
+
+```{r}
+
+setwd("C:/Users/shake/OneDrive/Documents/GitHub/SymbulationEmp/stats_scripts")
+##  Plots
+all_data <- read_table2("munged_area_mult-sym-1000-s.dat") # Load data
+all_data <- all_data %>% filter(update != "update") # remove extra header rows
+
+all_data$update <- as.numeric(all_data$update) # Treat update as numeric
+all_data$count <- as.numeric(all_data$count) # Treat count as numeric
+
+all_data <- all_data %>% mutate(  # Create column for heat map label
+                          Interaction_Rate = case_when(
+                            interval == "-1_-.9" ~ "-1 to -0.8 (Parasitic)", 
+                            interval == "-.9_-.8" ~ "-1 to -0.8 (Parasitic)",
+                            interval == "-.8_-.7" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.7_-.6" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.6_-.5" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.5_-.4" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.4_-.3" ~ "-0.4 to -0.2 (Detrimental)",
+                            interval == "-.3_-.2" ~ "-0.4 to -0.2 (Detrimental)", 
+                            interval == "-.2_-.1" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "-.1_0" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "0_.1" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".1_.2" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".2_.3" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".3_.4" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".4_.5" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".5_.6" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".6_.7" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".7_.8" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".8_.9" ~ "0.8 to 1.0 (Mutualistic)",
+                            interval == ".9_1" ~ "0.8 to 1.0 (Mutualistic)"
+                          ),
+                          
+                          Rate = case_when( # Create column for vertical transmission rate label
+                            treatment == 0.0 ~ "0%",
+                            treatment == 0.05 ~ "5%",
+                            treatment == 0.06 ~ "6%",
+                            treatment == 0.07 ~ "7%",
+                            treatment == 0.08 ~ "8%",
+                            treatment == 0.09 ~ "9%",
+                            treatment == 0.1 ~ "10%",
+                            treatment == 0.2 ~ "20%",
+                            treatment == 0.3 ~ "30%",
+                            treatment == 0.4 ~ "40%",
+                            treatment == 0.5 ~ "50%",
+                            treatment == 0.6 ~ "60%",
+                            treatment == 0.7 ~ "70%",
+                            treatment == 0.8 ~ "80%",
+                            treatment == 0.9 ~ "90%",
+                            treatment == 1 ~ "100%",
+                          )
+)
+
+# Reorder interaction rate factor to be in correct numeric order:
+# - First, we turn interval into a numeric variable that just holds the first number of each bin
+all_data$interval <- as.numeric(str_extract(all_data$interval, "^-*\\.*[:digit:]+"))
+# - Next we convert Interaction_Rate to a factor
+all_data$Interaction_Rate <- as.factor(all_data$Interaction_Rate)
+# - Lastly, we reorder Interaction_Rate based on interval
+all_data$Interaction_Rate <- fct_reorder(all_data$Interaction_Rate, all_data$interval)
+
+# Sum numbers in each bin to get correct totals
+all_data <- all_data %>% group_by(Interaction_Rate, seed, treatment, update) %>% summarise(count = sum(count)) %>% mutate(rep=seed)
+```
+
+#Create SymVals Data plots
+
+```{r s-1000-v-0}
+# Make plot
+ggplot(all_data %>% filter(treatment==0), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-1000-v-10}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-1000-v-20}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.2), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-1000-v-30}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.3), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-1000-v-40}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.4), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-1000-v-50}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.5), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-1000-v-60}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.6), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-1000-v-70}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.7), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-1000-v-80}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.8), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-1000-v-90}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.9), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r s-1000-v-100}
+# Make plot
+ggplot(all_data %>% filter(treatment==1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+
+#SymDiveristy Data for 10 Symbionts per Host
+
+```{r}
+
+setwd("C:/Users/shake/OneDrive/Documents/GitHub/SymbulationEmp/stats_scripts")
+
+all_data <- read_table2("munged_symDiv_area_mult-sym-10.dat") # Load data
+all_data <- all_data %>% filter(update != "update") # remove extra header rows
+
+all_data$update <- as.numeric(all_data$update) # Treat update as numeric
+all_data$count <- as.numeric(all_data$count) # Treat count as numeric
+
+all_data <- all_data %>% mutate(  # Create column for heat map label
+                          Interaction_Rate = case_when(
+                            
+                            interval == "0_1" ~ "0 to 1 ", 
+                            interval == "1_2" ~ "1 to 2 ",
+                            interval == "2_3" ~ "2 to 3 ",
+                            interval == "3_4" ~ "3 to 4 ",
+                            interval == "4_5" ~ "4 to 5 ",
+                            interval == "5_6" ~ "5 to 6 ",
+                            interval == "6_7" ~ "6 to 7 ",
+                            interval == "7_8" ~ "7 to 8 ",
+                            interval == "8_9" ~ "8 to 9 ",
+                            interval == "9_10" ~ "9 to 10 ",
+                          ),
+                          
+                          Rate = case_when( # Create column for vertical transmission rate label
+                            treatment == 0 ~ "0%",
+                            treatment == 0.05 ~ "5%",
+                            treatment == 0.06 ~ "6%",
+                            treatment == 0.07 ~ "7%",
+                            treatment == 0.08 ~ "8%",
+                            treatment == 0.09 ~ "9%",
+                            treatment == 0.1 ~ "10%",
+                            treatment == 0.2 ~ "20%",
+                            treatment == 0.3 ~ "30%",
+                            treatment == 0.4 ~ "40%",
+                            treatment == 0.5 ~ "50%",
+                            treatment == 0.6 ~ "60%",
+                            treatment == 0.7 ~ "70%",
+                            treatment == 0.8 ~ "80%",
+                            treatment == 0.9 ~ "90%",
+                            treatment == 1 ~ "100%",
+                          )
+)
+
+# Reorder interaction rate factor to be in correct numeric order:
+# - First, we turn interval into a numeric variable that just holds the first number of each bin
+all_data$interval <- as.numeric(str_extract(all_data$interval, "^-*\\.*[:digit:]+"))
+# - Next we convert Interaction_Rate to a factor
+all_data$Interaction_Rate <- as.factor(all_data$Interaction_Rate)
+# - Lastly, we reorder Interaction_Rate based on interval
+all_data$Interaction_Rate <- fct_reorder(all_data$Interaction_Rate, all_data$interval)
+
+# Sum numbers in each bin to get correct totals
+all_data <- all_data %>% group_by(Interaction_Rate, seed, treatment, update) %>% summarise(count = sum(count)) %>% mutate(rep=seed)
+```
+
+#Host Variance Data plots
+
+```{r sym-10-0}
+# Make plot
+ggplot(all_data %>% filter(treatment==0), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r sym-10-10}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r sym-10-20}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.2), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r sym-10-30}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.3), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r sym-10-40}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.4), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r sym-10-50}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.5), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r sym-10-60}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.6), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r sym-10-70}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.7), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r sym-10-80}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.8), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r sym-10-90}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.9), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r sym-10-100}
+# Make plot
+ggplot(all_data %>% filter(treatment==1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+#Host Mean Data plots
+
+##Load the Data
+
+```{r}
+
+
+setwd("C:/Users/shake/OneDrive/Documents/GitHub/SymbulationEmp/stats_scripts")
+
+all_data <- read_table2("munged_symDivMean_area_mult-sym-10.dat") # Load data
+all_data <- all_data %>% filter(update != "update") # remove extra header rows
+
+all_data$update <- as.numeric(all_data$update) # Treat update as numeric
+all_data$count <- as.numeric(all_data$count) # Treat count as numeric
+
+all_data <- all_data %>% mutate(  # Create column for heat map label
+                          Interaction_Rate = case_when(
+                            
+                            interval == "-1_-.9" ~ "-1 to -0.8 (Parasitic)",
+                            interval == "-.9_-.8" ~ "-1 to -0.8 (Parasitic)",
+                            interval == "-.8_-.7" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.7_-.6" ~ "-0.8 to -0.6 (Parasitic)", 
+                            interval == "-.6_-.5" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.5_-.4" ~ "-0.6 to -0.4 (Detrimental)", 
+                            interval == "-.4_-.3" ~ "-0.4 to -0.2 (Detrimental)",
+                            interval == "-.3_-.2" ~ "-0.4 to -0.2 (Detrimental)", 
+                            interval == "-.2_-.1" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "-.1_0" ~ "-0.2 to 0 (Nearly Neutral)",
+                            interval == "0_.1" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".1_.2" ~ "0 to 0.2 (Nearly Neutral)",
+                            interval == ".2_.3" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".3_.4" ~ "0.2 to 0.4 (Positive)",
+                            interval == ".4_.5" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".5_.6" ~ "0.4 to 0.6 (Positive)",
+                            interval == ".6_.7" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".7_.8" ~ "0.6 to 0.8 (Mutualistic)",
+                            interval == ".8_.9" ~ "0.8 to 1.0 (Mutualistic)",
+                            interval == ".9_1" ~ "0.8 to 1.0 (Mutualistic)"
+                          ),
+                          
+                          Rate = case_when( # Create column for vertical transmission rate label
+                            treatment == 0 ~ "0%",
+                            treatment == 0.05 ~ "5%",
+                            treatment == 0.06 ~ "6%",
+                            treatment == 0.07 ~ "7%",
+                            treatment == 0.08 ~ "8%",
+                            treatment == 0.09 ~ "9%",
+                            treatment == 0.1 ~ "10%",
+                            treatment == 0.2 ~ "20%",
+                            treatment == 0.3 ~ "30%",
+                            treatment == 0.4 ~ "40%",
+                            treatment == 0.5 ~ "50%",
+                            treatment == 0.6 ~ "60%",
+                            treatment == 0.7 ~ "70%",
+                            treatment == 0.8 ~ "80%",
+                            treatment == 0.9 ~ "90%",
+                            treatment == 1 ~ "100%",
+                          )
+)
+
+all_data$interval <- as.numeric(str_extract(all_data$interval, "^-*\\.*[:digit:]+"))
+# - Next we convert Interaction_Rate to a factor
+all_data$Interaction_Rate <- as.factor(all_data$Interaction_Rate)
+# - Lastly, we reorder Interaction_Rate based on interval
+all_data$Interaction_Rate <- fct_reorder(all_data$Interaction_Rate, all_data$interval)
+
+# Sum numbers in each bin to get correct totals
+all_data <- all_data %>% group_by(Interaction_Rate, seed, treatment, update) %>% summarise(count = sum(count)) %>% mutate(rep=seed)
+
+```
+
+##Data Plots for Host Mean Data
+```{r host-v-0}
+# Make plot
+ggplot(all_data %>% filter(treatment==0), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r host-v-10}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r host-v-20}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.2), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r host-v-30}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.3), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r host-v-40}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.4), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r host-v-50}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.5), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r host-v-60}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.6), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r host-v-70}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.7), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r host-v-80}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.8), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r host-v-90}
+# Make plot
+ggplot(all_data %>% filter(treatment==0.9), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r host-v-100}
+# Make plot
+ggplot(all_data %>% filter(treatment==1), aes(x=update,y=count, fill=Interaction_Rate), position='stack') + geom_area() +ylab("Count of Symbionts with Phenotype") + xlab("Evolutionary time (in updates)") +scale_fill_manual("Interaction Rate\n Phenotypes",values=tenhelix) + theme(panel.background = element_rect(fill='light grey', colour='black')) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + guides(fill = "none") + guides(fill = guide_legend())+ facet_wrap(~rep) + theme(axis.text.x = element_text(angle=90, hjust=1))
+```
